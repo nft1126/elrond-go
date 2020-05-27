@@ -309,6 +309,9 @@ func (r *stakingSC) unJail(args *vmcommon.ContractCallInput) vmcommon.ReturnCode
 		if len(stakedData.RewardAddress) == 0 {
 			return vmcommon.UserError
 		}
+		if !r.eei.IsJailed(argument) && stakedData.JailedRound == math.MaxUint64 {
+			return vmcommon.UserError
+		}
 
 		if stakedData.UnJailedNonce <= stakedData.JailedNonce {
 			r.removeFromJailedNodes()

@@ -469,7 +469,7 @@ func createTestAddresses(numAddresses uint64) [][]byte {
 
 func TestJournalizingAndTimeToProcessChange(t *testing.T) {
 	// Only a test to benchmark jurnalizing and getting data from trie
-	t.Skip()
+	//t.Skip()
 
 	numRun := 1000
 	ownerAddressBytes := []byte("12345678901234567890123456789011")

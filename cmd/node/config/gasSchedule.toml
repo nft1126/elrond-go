@@ -11,7 +11,7 @@
     UnBond              = 5000000
     Claim               = 5000000
     Get                 = 5000000
-    ChangeRewardAddress = 5000000
+    ChangeRewardAddress = 500000
     ChangeValidatorKeys = 5000000
     UnJail              = 5000000
     ESDTIssue           = 50000000

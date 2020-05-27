@@ -17,6 +17,7 @@ type vmContext struct {
 	systemContracts     vm.SystemSCContainer
 	inputParser         vm.ArgumentsParser
 	scAddress           []byte
+	minRating           uint32
 
 	storageUpdate  map[string]map[string][]byte
 	outputAccounts map[string]*vmcommon.OutputAccount
@@ -50,6 +51,7 @@ func NewVMContext(
 		cryptoHook:          cryptoHook,
 		inputParser:         inputParser,
 		validatorAccountsDB: validatorAccountsDB,
+		minRating:           1, // TODO: add ratingsDataInfoHandler as input and use minRating there
 	}
 	vmc.CleanCache()
 
@@ -403,6 +405,21 @@ func (host *vmContext) IsValidator(blsKey []byte) bool {
 	isValidator := validatorAccount.GetList() == string(core.EligibleList) ||
 		validatorAccount.GetList() == string(core.WaitingList)
 	return isValidator
+}
+
+// IsJailed returns true if the validator's rating is under the jailed rating limit
+func (host *vmContext) IsJailed(blsKey []byte) bool {
+	acc, err := host.validatorAccountsDB.GetExistingAccount(blsKey)
+	if err != nil {
+		return false
+	}
+
+	validatorAccount, ok := acc.(state.PeerAccountHandler)
+	if !ok {
+		return false
+	}
+
+	return validatorAccount.GetTempRating() <= host.minRating
 }
 
 // IsInterfaceNil returns if the underlying implementation is nil

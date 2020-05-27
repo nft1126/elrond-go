@@ -24,6 +24,15 @@ type SystemEIStub struct {
 	CryptoHookCalled                func() vmcommon.CryptoHook
 	UseGasCalled                    func(gas uint64) error
 	IsValidatorCalled               func(blsKey []byte) bool
+	IsJailedCalled                  func(blsKey []byte) bool
+}
+
+// IsJailed -
+func (s *SystemEIStub) IsJailed(blsKey []byte) bool {
+	if s.IsJailedCalled != nil {
+		return s.IsJailedCalled(blsKey)
+	}
+	return false
 }
 
 // IsValidator -

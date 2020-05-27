@@ -135,7 +135,6 @@ func (s *stakingAuctionSC) unJail(args *vmcommon.ContractCallInput) vmcommon.Ret
 
 	config := s.getConfig(s.eei.BlockChainHook().CurrentEpoch())
 	totalUnJailPrice := big.NewInt(0).Mul(config.UnJailPrice, big.NewInt(int64(len(args.Arguments))))
-
 	if totalUnJailPrice.Cmp(args.CallValue) != 0 {
 		return vmcommon.UserError
 	}
@@ -145,11 +144,20 @@ func (s *stakingAuctionSC) unJail(args *vmcommon.ContractCallInput) vmcommon.Ret
 		return vmcommon.OutOfGas
 	}
 
+	unSuccessFullUnJails := 0
 	for _, argument := range args.Arguments {
-		vmOutput, _ := s.executeOnStakingSC([]byte("unJail@" + hex.EncodeToString(argument)))
-		if vmOutput != nil && vmOutput.ReturnCode == vmcommon.OutOfGas {
-			return vmcommon.OutOfGas
+		vmOutput, err := s.executeOnStakingSC([]byte("unJail@" + hex.EncodeToString(argument)))
+		isError := err != nil || vmOutput.ReturnCode != vmcommon.Ok
+		if isError {
+			unSuccessFullUnJails++
 		}
+	}
+
+	valueToReturn := big.NewInt(0).Mul(config.UnJailPrice, big.NewInt(int64(unSuccessFullUnJails)))
+	err = s.eei.Transfer(args.CallerAddr, args.RecipientAddr, valueToReturn, nil, 0)
+	if err != nil {
+		log.Trace("transfer error on unJail", "err", err)
+		return vmcommon.UserError
 	}
 
 	return vmcommon.Ok
