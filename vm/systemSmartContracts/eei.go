@@ -51,7 +51,7 @@ func NewVMContext(
 		cryptoHook:          cryptoHook,
 		inputParser:         inputParser,
 		validatorAccountsDB: validatorAccountsDB,
-		minRating:           1, // TODO: add ratingsDataInfoHandler as input and use minRating there
+		minRating:           1000000, // TODO: add ChanceComputer as input and use minRating there
 	}
 	vmc.CleanCache()
 
