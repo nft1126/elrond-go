@@ -1,21 +1,17 @@
 package machine
 
 import (
-	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCpuStatisticsUsagePercent(t *testing.T) {
 	t.Parallel()
 
-	cs, err := NewCpuStatistics()
-	assert.Nil(t, err)
+	provider, err := NewCpuStatisticsProvider()
+	require.Nil(t, err)
 
-	cs.ComputeStatistics()
-	cpuUsagePercentValue := cs.CpuPercentUsage()
-	fmt.Printf("CPU usage: %d%%\n", cpuUsagePercentValue)
-
-	assert.True(t, cpuUsagePercentValue <= 100)
+	stats := provider.AcquireStatistics()
+	require.True(t, stats.CpuUsagePercent <= 100)
 }

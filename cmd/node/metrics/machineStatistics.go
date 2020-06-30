@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"errors"
+	"sync"
 	"time"
 
 	"github.com/ElrondNetwork/elrond-go/core"
@@ -55,37 +56,32 @@ func registerMemStatistics(appStatusPollingHandler *appStatusPolling.AppStatusPo
 }
 
 func registerNetStatistics(appStatusPollingHandler *appStatusPolling.AppStatusPolling) error {
-	netStats := &machine.NetStatistics{}
-	go func() {
-		for {
-			netStats.ComputeStatistics()
-		}
-	}()
+	var mutex sync.Mutex
+	var netStats machine.NetStatistics
 
 	return appStatusPollingHandler.RegisterPollingFunc(func(appStatusHandler core.AppStatusHandler) {
-		appStatusHandler.SetUInt64Value(core.MetricNetworkRecvBps, netStats.BpsRecv())
-		appStatusHandler.SetUInt64Value(core.MetricNetworkRecvBpsPeak, netStats.BpsRecvPeak())
-		appStatusHandler.SetUInt64Value(core.MetricNetworkRecvPercent, netStats.PercentRecv())
+		mutex.Lock()
+		defer mutex.Unlock()
+		netStats = machine.AcquireNetStatistics(netStats)
 
-		appStatusHandler.SetUInt64Value(core.MetricNetworkSentBps, netStats.BpsSent())
-		appStatusHandler.SetUInt64Value(core.MetricNetworkSentBpsPeak, netStats.BpsSentPeak())
-		appStatusHandler.SetUInt64Value(core.MetricNetworkSentPercent, netStats.PercentSent())
+		appStatusHandler.SetUInt64Value(core.MetricNetworkRecvBps, netStats.BpsReceived)
+		appStatusHandler.SetUInt64Value(core.MetricNetworkRecvBpsPeak, netStats.BpsReceivedPeak)
+		appStatusHandler.SetUInt64Value(core.MetricNetworkRecvPercent, netStats.ReceivedPercent)
+
+		appStatusHandler.SetUInt64Value(core.MetricNetworkSentBps, netStats.BpsSent)
+		appStatusHandler.SetUInt64Value(core.MetricNetworkSentBpsPeak, netStats.BpsSentPeak)
+		appStatusHandler.SetUInt64Value(core.MetricNetworkSentPercent, netStats.SentPercent)
 	})
 }
 
 func registerCpuStatistics(appStatusPollingHandler *appStatusPolling.AppStatusPolling) error {
-	cpuStats, err := machine.NewCpuStatistics()
+	provider, err := machine.NewCpuStatisticsProvider()
 	if err != nil {
 		return err
 	}
 
-	go func() {
-		for {
-			cpuStats.ComputeStatistics()
-		}
-	}()
-
 	return appStatusPollingHandler.RegisterPollingFunc(func(appStatusHandler core.AppStatusHandler) {
-		appStatusHandler.SetUInt64Value(core.MetricCpuLoadPercent, cpuStats.CpuPercentUsage())
+		cpuStats := provider.AcquireStatistics()
+		appStatusHandler.SetUInt64Value(core.MetricCpuLoadPercent, cpuStats.CpuPercentUsage)
 	})
 }

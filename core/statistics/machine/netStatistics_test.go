@@ -1,49 +1,43 @@
 package machine
 
 import (
-	"fmt"
+	"sync"
 	"testing"
+	"time"
 
-	"github.com/ElrondNetwork/elrond-go/core"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestNetStatistics(t *testing.T) {
+func TestAcquireNetStatistics_RelativelyToPreviousValues(t *testing.T) {
 	t.Parallel()
 
-	net := &NetStatistics{}
+	var wg sync.WaitGroup
+	var mutex sync.Mutex
+	netStats := NetStatistics{}
+	netStats.BpsSentPeak = 41
+	netStats.BpsReceivedPeak = 41
 
-	net.ComputeStatistics()
-	bpsRecv := net.BpsRecv()
-	bpsSent := net.BpsSent()
-	bpsRecvPeak := net.BpsRecvPeak()
-	bpsSentPeak := net.BpsSentPeak()
-	bpsRecvPercent := net.PercentSent()
-	bpsSentPercent := net.PercentRecv()
+	// Many routines in launched in parallel
+	wg.Add(10)
 
-	fmt.Printf("Recv: %s/s, sent: %s/s\n", core.ConvertBytes(bpsRecv), core.ConvertBytes(bpsSent))
-	fmt.Printf("Peak recv: %s/s, sent: %s/s\n", core.ConvertBytes(bpsRecvPeak), core.ConvertBytes(bpsSentPeak))
-	fmt.Printf("Recv usage: %d%%, sent: %d%%\n", bpsRecvPercent, bpsSentPercent)
-}
+	for i := 0; i < 10; i++ {
+		go func(i int) {
+			mutex.Lock()
+			if i == 3 {
+				netStats.BpsSentPeak = 42
+				netStats.BpsReceivedPeak = 42
+			}
 
-func TestNetStatistics_ResetShouldWork(t *testing.T) {
-	t.Parallel()
+			netStats = AcquireNetStatistics(netStats)
+			mutex.Unlock()
 
-	net := &NetStatistics{}
+			time.Sleep(10 * time.Millisecond)
+			wg.Done()
+		}(i)
+	}
 
-	net.setZeroStatsAndWait()
+	wg.Wait()
 
-	bpsRecv := net.BpsRecv()
-	bpsSent := net.BpsSent()
-	bpsRecvPeak := net.BpsRecvPeak()
-	bpsSentPeak := net.BpsSentPeak()
-	bpsRecvPercent := net.PercentSent()
-	bpsSentPercent := net.PercentRecv()
-
-	assert.Equal(t, uint64(0), bpsRecv)
-	assert.Equal(t, uint64(0), bpsSent)
-	assert.Equal(t, uint64(0), bpsRecvPeak)
-	assert.Equal(t, uint64(0), bpsSentPeak)
-	assert.Equal(t, uint64(0), bpsRecvPercent)
-	assert.Equal(t, uint64(0), bpsSentPercent)
+	require.Equal(t, uint64(42), netStats.BpsReceivedPeak)
+	require.Equal(t, uint64(42), netStats.BpsSentPeak)
 }
