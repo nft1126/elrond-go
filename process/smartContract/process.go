@@ -899,7 +899,7 @@ func (sc *scProcessor) createSmartContractResult(
 	result.SndAddr = tx.GetRcvAddr()
 	result.Code = outAcc.Code
 	result.Data = outAcc.Data
-	if bytes.Equal(result.GetRcvAddr(), vm.StakingSCAddress) {
+	if sc.auctionEnabled && bytes.Equal(result.GetRcvAddr(), vm.StakingSCAddress) {
 		//TODO: write directly from staking smart contract to the validator trie - it gets complicated in reverts
 		// storage update for staking contract is used in stakingToPeer
 		result.Data = append(result.Data, sc.argsParser.CreateDataFromStorageUpdate(storageUpdates)...)

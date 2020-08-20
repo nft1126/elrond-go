@@ -26,33 +26,33 @@ var log = logger.GetOrCreate("process/scToProtocol")
 
 // ArgStakingToPeer is struct that contain all components that are needed to create a new stakingToPeer object
 type ArgStakingToPeer struct {
-	PubkeyConv  core.PubkeyConverter
-	Hasher      hashing.Hasher
-	Marshalizer marshal.Marshalizer
-	PeerState   state.AccountsAdapter
-	BaseState   state.AccountsAdapter
-
-	ArgParser   process.ArgumentsParser
-	CurrTxs     dataRetriever.TransactionCacher
-	ScQuery     external.SCQueryService
-	RatingsData process.RatingsInfoHandler
+	PubkeyConv         core.PubkeyConverter
+	Hasher             hashing.Hasher
+	Marshalizer        marshal.Marshalizer
+	PeerState          state.AccountsAdapter
+	BaseState          state.AccountsAdapter
+	ArgParser          process.ArgumentsParser
+	CurrTxs            dataRetriever.TransactionCacher
+	ScQuery            external.SCQueryService
+	RatingsData        process.RatingsInfoHandler
+	AuctionEnableNonce uint64
 }
 
 // stakingToPeer defines the component which will translate changes from staking SC state
 // to validator statistics trie
 type stakingToPeer struct {
-	pubkeyConv  core.PubkeyConverter
-	hasher      hashing.Hasher
-	marshalizer marshal.Marshalizer
-	peerState   state.AccountsAdapter
-	baseState   state.AccountsAdapter
-
-	argParser    process.ArgumentsParser
-	currTxs      dataRetriever.TransactionCacher
-	scQuery      external.SCQueryService
-	startRating  uint32
-	unJailRating uint32
-	jailRating   uint32
+	pubkeyConv         core.PubkeyConverter
+	hasher             hashing.Hasher
+	marshalizer        marshal.Marshalizer
+	peerState          state.AccountsAdapter
+	baseState          state.AccountsAdapter
+	argParser          process.ArgumentsParser
+	currTxs            dataRetriever.TransactionCacher
+	scQuery            external.SCQueryService
+	startRating        uint32
+	unJailRating       uint32
+	jailRating         uint32
+	auctionEnableNonce uint64
 }
 
 // NewStakingToPeer creates the component which moves from staking sc state to peer state
@@ -63,17 +63,18 @@ func NewStakingToPeer(args ArgStakingToPeer) (*stakingToPeer, error) {
 	}
 
 	st := &stakingToPeer{
-		pubkeyConv:   args.PubkeyConv,
-		hasher:       args.Hasher,
-		marshalizer:  args.Marshalizer,
-		peerState:    args.PeerState,
-		baseState:    args.BaseState,
-		argParser:    args.ArgParser,
-		currTxs:      args.CurrTxs,
-		scQuery:      args.ScQuery,
-		startRating:  args.RatingsData.StartRating(),
-		unJailRating: args.RatingsData.StartRating(),
-		jailRating:   args.RatingsData.MinRating(),
+		pubkeyConv:         args.PubkeyConv,
+		hasher:             args.Hasher,
+		marshalizer:        args.Marshalizer,
+		peerState:          args.PeerState,
+		baseState:          args.BaseState,
+		argParser:          args.ArgParser,
+		currTxs:            args.CurrTxs,
+		scQuery:            args.ScQuery,
+		startRating:        args.RatingsData.StartRating(),
+		unJailRating:       args.RatingsData.StartRating(),
+		jailRating:         args.RatingsData.MinRating(),
+		auctionEnableNonce: args.AuctionEnableNonce,
 	}
 
 	return st, nil
@@ -127,6 +128,10 @@ func (stp *stakingToPeer) getPeerAccount(key []byte) (state.PeerAccountHandler, 
 
 // UpdateProtocol applies changes from staking smart contract to peer state and creates the actual peer changes
 func (stp *stakingToPeer) UpdateProtocol(body *block.Body, nonce uint64) error {
+	if nonce >= stp.auctionEnableNonce {
+		return nil
+	}
+
 	affectedStates, err := stp.getAllModifiedStates(body)
 	if err != nil {
 		return err
