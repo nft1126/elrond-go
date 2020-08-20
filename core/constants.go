@@ -32,7 +32,7 @@ const NewList PeerType = "new"
 // LeavingNextEpoch represents the list of peer who will leave in the next epoch
 const LeavingNextEpoch = "leavingNext"
 
-// NewInNextEpoch respresents the list of peers who will become validators in the next epoch
+// NewInNextEpoch represents the list of peers who will become validators in the next epoch
 const NewInNextEpoch = "newNext"
 
 // CombinedPeerType - represents the combination of two peerTypes
@@ -55,7 +55,7 @@ const NodeTypeValidator NodeType = "validator"
 // shard to start in as observer
 const DisabledShardIDAsObserver = uint32(0xFFFFFFFF) - 7
 
-// pkPrefixSize specifies the max numbers of chars to be displayed from one publc key
+// pkPrefixSize specifies the max numbers of chars to be displayed from one public key
 const pkPrefixSize = 12
 
 // FileModeUserReadWrite represents the permission for a file which allows the user for reading and writing
@@ -117,8 +117,8 @@ const MetricPublicKeyBlockSign = "erd_public_key_block_sign"
 // MetricShardId is the metric for monitoring shard id of a node
 const MetricShardId = "erd_shard_id"
 
-// MetricNumShardsWithoutMetacahin is the metric for monitoring the number of shards (excluding meta)
-const MetricNumShardsWithoutMetacahin = "erd_num_shards_without_meta"
+// MetricNumShardsWithoutMetachain is the metric for monitoring the number of shards (excluding meta)
+const MetricNumShardsWithoutMetachain = "erd_num_shards_without_meta"
 
 // MetricTxPoolLoad is the metric for monitoring number of transactions from pool of a node
 const MetricTxPoolLoad = "erd_tx_pool_load"
@@ -479,7 +479,7 @@ const PutInStorerMaxTime = time.Second
 const DefaultUnstakedEpoch = math.MaxUint32
 
 // InvalidMessageBlacklistDuration represents the time to keep a peer in the black list if it sends a message that
-// does not follow the protocol: example not useing the same marshaler as the other peers
+// does not follow the protocol: example not using the same marshaler as the other peers
 const InvalidMessageBlacklistDuration = time.Second * 3600
 
 // MaxNumShards represents the maximum number of shards possible in the system

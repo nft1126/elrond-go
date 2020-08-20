@@ -148,7 +148,7 @@ func (sm *statusMetrics) StatusMetricsWithoutP2PPrometheusString() string {
 func (sm *statusMetrics) ConfigMetrics() map[string]interface{} {
 	configMetrics := make(map[string]interface{})
 
-	configMetrics[core.MetricNumShardsWithoutMetacahin] = sm.loadUint64Metric(core.MetricNumShardsWithoutMetacahin)
+	configMetrics[core.MetricNumShardsWithoutMetachain] = sm.loadUint64Metric(core.MetricNumShardsWithoutMetachain)
 	configMetrics[core.MetricNumNodesPerShard] = sm.loadUint64Metric(core.MetricNumNodesPerShard)
 	configMetrics[core.MetricNumMetachainNodes] = sm.loadUint64Metric(core.MetricNumMetachainNodes)
 	configMetrics[core.MetricShardConsensusGroupSize] = sm.loadUint64Metric(core.MetricShardConsensusGroupSize)
