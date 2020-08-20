@@ -1037,7 +1037,6 @@ func (s *stakingAuctionSC) claim(args *vmcommon.ContractCallInput) vmcommon.Retu
 		return vmcommon.OutOfGas
 	}
 
-	zero := big.NewInt(0)
 	claimable := big.NewInt(0).Sub(registrationData.TotalStakeValue, registrationData.LockedStake)
 	if claimable.Cmp(zero) <= 0 {
 		return vmcommon.Ok

@@ -26,8 +26,14 @@ const JailedList PeerType = "jailed"
 // ObserverList represents the list of peers who don't participate in consensus but will join the next epoch
 const ObserverList PeerType = "observer"
 
-// NewList -
+// NewList represents the list for the new entries
 const NewList PeerType = "new"
+
+// LeavingNextEpoch represents the list of peer who will leave in the next epoch
+const LeavingNextEpoch = "leavingNext"
+
+// NewInNextEpoch respresents the list of peers who will become validators in the next epoch
+const NewInNextEpoch = "newNext"
 
 // CombinedPeerType - represents the combination of two peerTypes
 const CombinedPeerType = "%s (%s)"
