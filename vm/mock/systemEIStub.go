@@ -28,6 +28,15 @@ type SystemEIStub struct {
 	ExecuteOnDestContextCalled      func(destination, sender []byte, value *big.Int, input []byte) (*vmcommon.VMOutput, error)
 	GetStorageFromAddressCalled     func(address []byte, key []byte) []byte
 	SetStorageForAddressCalled      func(address []byte, key []byte, value []byte)
+	GetAllStateCalled               func(address []byte) (map[string][]byte, error)
+}
+
+// GetAllState -
+func (s *SystemEIStub) GetAllState(address []byte) (map[string][]byte, error) {
+	if s.GetAllStateCalled != nil {
+		return s.GetAllStateCalled(address)
+	}
+	return nil, nil
 }
 
 // IsValidator -

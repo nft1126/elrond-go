@@ -23,7 +23,7 @@ var zero = big.NewInt(0)
 
 // return codes for each input blskey
 const (
-	ok uint8 = iota
+	staked uint8 = iota
 	invalidKey
 	failed
 	waiting
@@ -861,15 +861,8 @@ func (s *stakingAuctionSC) unStake(args *vmcommon.ContractCallInput) vmcommon.Re
 		}
 
 		vmOutput, err := s.executeOnStakingSC([]byte("unStake@" + hex.EncodeToString(blsKey) + "@" + hex.EncodeToString(registrationData.RewardAddress)))
-		if err != nil {
-			s.eei.AddReturnMessage(fmt.Sprintf("cannot do unStake for key %s: %s", hex.EncodeToString(blsKey), err.Error()))
-			s.eei.Finish(blsKey)
-			s.eei.Finish([]byte{failed})
-			continue
-		}
-
-		if vmOutput.ReturnCode != vmcommon.Ok {
-			s.eei.AddReturnMessage(fmt.Sprintf("cannot do unStake for key %s: %s", hex.EncodeToString(blsKey), vmOutput.ReturnCode.String()))
+		if err != nil || vmOutput.ReturnCode != vmcommon.Ok {
+			s.eei.AddReturnMessage(fmt.Sprintf("cannot do unStake for key %s", hex.EncodeToString(blsKey)))
 			s.eei.Finish(blsKey)
 			s.eei.Finish([]byte{failed})
 			continue
@@ -949,8 +942,14 @@ func (s *stakingAuctionSC) unBond(args *vmcommon.ContractCallInput) vmcommon.Ret
 			s.eei.AddReturnMessage(fmt.Sprintf("cannot do unBond for key: %s, error: %s", hex.EncodeToString(blsKey), err.Error()))
 			s.eei.Finish(blsKey)
 			s.eei.Finish([]byte{failed})
+			continue
 		}
-		// returns what value is still under the selected bls key
+
+		if len(nodeData.RewardAddress) == 0 {
+			unBondedKeys = append(unBondedKeys, blsKey)
+			continue
+		}
+
 		vmOutput, err := s.executeOnStakingSC([]byte("unBond@" + hex.EncodeToString(blsKey)))
 		if err != nil || vmOutput.ReturnCode != vmcommon.Ok {
 			s.eei.AddReturnMessage(fmt.Sprintf("cannot do unBond for key: %s", hex.EncodeToString(blsKey)))
@@ -988,12 +987,11 @@ func (s *stakingAuctionSC) unBond(args *vmcommon.ContractCallInput) vmcommon.Ret
 		return vmcommon.UserError
 	}
 
-	zero := big.NewInt(0)
 	if registrationData.LockedStake.Cmp(zero) == 0 && registrationData.TotalStakeValue.Cmp(zero) == 0 {
 		s.eei.SetStorage(args.CallerAddr, nil)
 	} else {
 		s.deleteUnBondedKeys(registrationData, unBondedKeys)
-		err := s.saveRegistrationData(args.CallerAddr, registrationData)
+		err = s.saveRegistrationData(args.CallerAddr, registrationData)
 		if err != nil {
 			s.eei.AddReturnMessage("cannot save registration data: error " + err.Error())
 			return vmcommon.UserError
@@ -1038,15 +1036,20 @@ func (s *stakingAuctionSC) claim(args *vmcommon.ContractCallInput) vmcommon.Retu
 	}
 
 	claimable := big.NewInt(0).Sub(registrationData.TotalStakeValue, registrationData.LockedStake)
-	if claimable.Cmp(zero) <= 0 {
-		return vmcommon.Ok
+	if claimable.Cmp(zero) < 0 {
+		claimable.Set(zero)
 	}
 
 	registrationData.TotalStakeValue.Set(registrationData.LockedStake)
-	err = s.saveRegistrationData(args.CallerAddr, registrationData)
-	if err != nil {
-		s.eei.AddReturnMessage("cannot save registration data: error " + err.Error())
-		return vmcommon.UserError
+	if len(registrationData.BlsPubKeys) == 0 {
+		claimable.Add(claimable, registrationData.LockedStake)
+		s.eei.SetStorage(args.CallerAddr, nil)
+	} else {
+		err = s.saveRegistrationData(args.CallerAddr, registrationData)
+		if err != nil {
+			s.eei.AddReturnMessage("cannot save registration data: error " + err.Error())
+			return vmcommon.UserError
+		}
 	}
 
 	err = s.eei.Transfer(args.CallerAddr, args.RecipientAddr, claimable, nil, 0)
@@ -1058,29 +1061,66 @@ func (s *stakingAuctionSC) claim(args *vmcommon.ContractCallInput) vmcommon.Retu
 	return vmcommon.Ok
 }
 
-func (s *stakingAuctionSC) calculateNodePrice(bids []AuctionData) (*big.Int, error) {
-	auctionConfig := s.getConfig(s.eei.BlockChainHook().CurrentEpoch())
+func (s *stakingAuctionSC) calculateNodePrice(bids []AuctionData) *big.Int {
+	auctionConfig := s.getConfig(s.eei.BlockChainHook().CurrentEpoch() - 1)
 
 	minNodePrice := big.NewInt(0).Set(auctionConfig.MinStakeValue)
 	maxNodePrice := big.NewInt(0).Div(auctionConfig.TotalSupply, big.NewInt(int64(auctionConfig.NumNodes)))
 	numNodes := auctionConfig.NumNodes
 
-	for nodePrice := maxNodePrice; nodePrice.Cmp(minNodePrice) >= 0; nodePrice.Sub(nodePrice, auctionConfig.MinStep) {
+	qualifiedNodes := calcNumQualifiedNodes(auctionConfig.NodePrice, bids)
+	if qualifiedNodes >= numNodes {
+		return s.searchNodePriceUp(auctionConfig.NodePrice, maxNodePrice, auctionConfig.MinStep, bids, numNodes)
+	}
+
+	return s.searchNodePriceDown(auctionConfig.NodePrice, minNodePrice, auctionConfig.MinStep, bids, numNodes)
+}
+
+func (s *stakingAuctionSC) searchNodePriceUp(
+	from *big.Int,
+	max *big.Int,
+	minStep *big.Int,
+	bids []AuctionData,
+	numNodes uint32,
+) *big.Int {
+
+	prevNodePrice := big.NewInt(0).Set(from)
+	for nodePrice := big.NewInt(0).Add(from, minStep); nodePrice.Cmp(max) <= 0; nodePrice.Add(nodePrice, minStep) {
+		qualifiedNodes := calcNumQualifiedNodes(nodePrice, bids)
+		if qualifiedNodes < numNodes {
+			return prevNodePrice
+		}
+		prevNodePrice.Set(nodePrice)
+	}
+
+	return max
+}
+
+func (s *stakingAuctionSC) searchNodePriceDown(
+	from *big.Int,
+	min *big.Int,
+	minStep *big.Int,
+	bids []AuctionData,
+	numNodes uint32,
+) *big.Int {
+
+	for nodePrice := big.NewInt(0).Sub(from, minStep); nodePrice.Cmp(min) >= 0; nodePrice.Sub(nodePrice, minStep) {
 		qualifiedNodes := calcNumQualifiedNodes(nodePrice, bids)
 		if qualifiedNodes >= numNodes {
-			return nodePrice, nil
+			return nodePrice
 		}
 	}
 
-	return nil, vm.ErrNotEnoughQualifiedNodes
+	return min
+}
+
+// SelectQualifyingBLSKeys -
+func (s *stakingAuctionSC) SelectQualifyingBLSKeys() {
+
 }
 
 func (s *stakingAuctionSC) selection(bids []AuctionData) [][]byte {
-	nodePrice, err := s.calculateNodePrice(bids)
-	if err != nil {
-		return nil
-	}
-
+	nodePrice := s.calculateNodePrice(bids)
 	totalQualifyingStake := big.NewFloat(0).SetInt(calcTotalQualifyingStake(nodePrice, bids))
 
 	reservePool := make(map[string]float64)

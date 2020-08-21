@@ -105,6 +105,11 @@ func (host *vmContext) SetStorage(key []byte, value []byte) {
 	host.SetStorageForAddress(host.scAddress, key, value)
 }
 
+// GetAllState returns all the key-value pair from the given address
+func (host *vmContext) GetAllState(address []byte) (map[string][]byte, error) {
+	return host.blockChainHook.GetAllState(address)
+}
+
 // GetBalance returns the balance of the given address
 func (host *vmContext) GetBalance(addr []byte) *big.Int {
 	strAdr := string(addr)
