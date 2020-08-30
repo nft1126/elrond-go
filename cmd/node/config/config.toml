@@ -318,7 +318,7 @@
 
 [UnsignedTransactionDataPool]
     Name = "UnsignedTransactionDataPool"
-    Capacity = 75        # per each pair (sourceShard, destinationShard)
+    Capacity = 75000        # per each pair (sourceShard, destinationShard)
     SizeInBytes = 31457280  # 30MB per each pair (sourceShard, destinationShard)
     Shards = 4
 

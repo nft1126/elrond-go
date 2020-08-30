@@ -283,6 +283,10 @@ func (cache *TxCache) NotifyAccountNonce(accountKey []byte, nonce uint64) {
 func (cache *TxCache) ImmunizeTxsAgainstEviction(_ [][]byte) {
 }
 
+func (cache *TxCache) Name() string {
+	return cache.name
+}
+
 // IsInterfaceNil returns true if there is no value under the interface
 func (cache *TxCache) IsInterfaceNil() bool {
 	return cache == nil

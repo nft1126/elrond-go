@@ -287,11 +287,23 @@ func (tpc *txsPoolsCleaner) cleanTxsPoolsIfNeeded() int {
 	numTxsRounds := len(tpc.mapTxsRounds)
 	tpc.mutMapTxsRounds.Unlock()
 
+	affectedStores := make(map[cacherWithName]int)
+	for _, txStore := range hashesToRemove {
+		affectedStores[txStore.(cacherWithName)] = txStore.Len()
+	}
+	for txStore, numItems := range affectedStores {
+		log.Info("txsPoolsCleaner.cleanTxsPoolsIfNeeded()", "txStore", txStore.Name(), "numItems", numItems)
+	}
+
 	startTime := time.Now()
 	for hash, txStore := range hashesToRemove {
 		txStore.Remove([]byte(hash))
 	}
 	elapsedTime := time.Since(startTime)
+
+	for txStore := range affectedStores {
+		log.Info("txsPoolsCleaner.cleanTxsPoolsIfNeeded()", "txStore", txStore.Name(), "numItems", txStore.Len())
+	}
 
 	if numTxsCleaned > 0 {
 		log.Debug("txsPoolsCleaner.cleanTxsPoolsIfNeeded",
@@ -363,4 +375,9 @@ func (tpc *txsPoolsCleaner) Close() error {
 // IsInterfaceNil returns true if there is no value under the interface
 func (tpc *txsPoolsCleaner) IsInterfaceNil() bool {
 	return tpc == nil
+}
+
+type cacherWithName interface {
+	storage.Cacher
+	Name() string
 }

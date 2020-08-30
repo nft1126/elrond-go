@@ -76,17 +76,20 @@ func (chunk *immunityChunk) AddItem(item *cacheItem) (has, added bool) {
 	if err != nil {
 		log.Error("No more room for the new item")
 		// No more room for the new item
+		log.Info("immunityChunk.AddItem() end", "has", false, "added", false)
 		return false, false
 	}
 
 	// Discard duplicates
 	if chunk.itemExistsNoLock(item) {
+		log.Info("immunityChunk.AddItem() end", "has", true, "added", false)
 		return true, false
 	}
 
 	chunk.addItemNoLock(item)
 	chunk.immunizeItemOnAddNoLock(item)
 	chunk.trackNumBytesOnAddNoLock(item)
+	log.Info("immunityChunk.AddItem() end", "has", has, "added", added)
 	return false, true
 }
 
@@ -107,6 +110,8 @@ func (chunk *immunityChunk) isCapacityExceededNoLock() bool {
 }
 
 func (chunk *immunityChunk) evictItemsNoLock() (numRemoved int, err error) {
+	log.Info("immunityChunk.evictItemsNoLock() begin")
+
 	numToRemoveEachStep := int(chunk.config.numItemsToPreemptivelyEvict)
 
 	// We perform the first step out of the loop in order to detect & return error
@@ -114,6 +119,7 @@ func (chunk *immunityChunk) evictItemsNoLock() (numRemoved int, err error) {
 	numRemoved += numRemovedInStep
 
 	if numRemovedInStep == 0 {
+		log.Error("immunityChunk.evictItemsNoLock() failed eviction")
 		return 0, storage.ErrFailedCacheEviction
 	}
 
@@ -122,10 +128,13 @@ func (chunk *immunityChunk) evictItemsNoLock() (numRemoved int, err error) {
 		numRemoved += numRemovedInStep
 	}
 
+	log.Info("immunityChunk.evictItemsNoLock() end", "numRemoved", numRemoved)
 	return numRemoved, nil
 }
 
 func (chunk *immunityChunk) removeOldestNoLock(numToRemove int) int {
+	log.Info("immunityChunk.removeOldestNoLock()", "numToRemove", numToRemove)
+
 	numRemoved := 0
 	element := chunk.itemsAsList.Front()
 

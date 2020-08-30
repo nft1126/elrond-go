@@ -309,6 +309,10 @@ func (ic *ImmunityCache) Diagnose(_ bool) {
 	)
 }
 
+func (ic *ImmunityCache) Name() string {
+	return ic.config.Name
+}
+
 // IsInterfaceNil returns true if there is no value under the interface
 func (ic *ImmunityCache) IsInterfaceNil() bool {
 	return ic == nil
