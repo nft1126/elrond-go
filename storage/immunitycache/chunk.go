@@ -74,6 +74,7 @@ func (chunk *immunityChunk) AddItem(item *cacheItem) (has, added bool) {
 
 	err := chunk.evictItemsIfCapacityExceededNoLock()
 	if err != nil {
+		log.Error("No more room for the new item")
 		// No more room for the new item
 		return false, false
 	}
@@ -150,6 +151,7 @@ func (chunk *immunityChunk) removeNoLock(element *list.Element) {
 	item := element.Value.(*cacheItem)
 	delete(chunk.items, item.key)
 	chunk.itemsAsList.Remove(element)
+	log.Info("immunityChunk.removeNoLock() WELL, removed", "key", []byte(item.key))
 	chunk.trackNumBytesOnRemoveNoLock(item)
 }
 
@@ -199,6 +201,7 @@ func (chunk *immunityChunk) RemoveItem(key string) bool {
 
 	wrapper, ok := chunk.items[key]
 	if !ok {
+		log.Info("immunityChunk.RemoveItem() NOT EXISTS", "key", []byte(key))
 		return false
 	}
 

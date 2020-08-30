@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ElrondNetwork/elrond-go-logger"
+	logger "github.com/ElrondNetwork/elrond-go-logger"
 	"github.com/ElrondNetwork/elrond-go/core"
 	"github.com/ElrondNetwork/elrond-go/core/check"
 	"github.com/ElrondNetwork/elrond-go/data"
@@ -369,6 +369,7 @@ func (tc *transactionCoordinator) RemoveBlockDataFromPool(body *block.Body) erro
 	for key, value := range separatedBodies {
 		go func(blockType block.Type, blockBody *block.Body) {
 			preproc := tc.getPreProcessor(blockType)
+			log.Info("transactionCoordinator.RemoveBlockDataFromPool()", "blockType", blockType, "preprocessor", fmt.Sprintf("%T", preproc))
 			if check.IfNil(preproc) {
 				wg.Done()
 				return
@@ -376,7 +377,7 @@ func (tc *transactionCoordinator) RemoveBlockDataFromPool(body *block.Body) erro
 
 			err := preproc.RemoveTxBlockFromPools(blockBody, tc.miniBlockPool)
 			if err != nil {
-				log.Trace("RemoveTxBlockFromPools", "error", err.Error())
+				log.Error("RemoveTxBlockFromPools", "error", err.Error())
 
 				errMutex.Lock()
 				errFound = err

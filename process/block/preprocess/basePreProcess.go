@@ -1,6 +1,7 @@
 package preprocess
 
 import (
+	"fmt"
 	"math/big"
 	"sync"
 
@@ -69,9 +70,12 @@ func (bpp *basePreProcess) removeDataFromPools(
 		}
 
 		strCache := process.ShardCacherIdentifier(currentMiniBlock.SenderShardID, currentMiniBlock.ReceiverShardID)
+		miniBlockHash, err := core.CalculateHash(bpp.marshalizer, bpp.hasher, currentMiniBlock)
+
+		log.Info("bpp.removeDataFromPools()", "txPool", fmt.Sprintf("%T", txPool), "strCache", strCache, "miniblock", miniBlockHash)
+
 		txPool.RemoveSetOfDataFromPool(currentMiniBlock.TxHashes, strCache)
 
-		miniBlockHash, err := core.CalculateHash(bpp.marshalizer, bpp.hasher, currentMiniBlock)
 		if err != nil {
 			return err
 		}

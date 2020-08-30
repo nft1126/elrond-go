@@ -1,10 +1,12 @@
 package immunitycache
 
 import (
+	"fmt"
 	"sync"
 
 	logger "github.com/ElrondNetwork/elrond-go-logger"
 	"github.com/ElrondNetwork/elrond-go/core/atomic"
+	"github.com/ElrondNetwork/elrond-go/data/smartContractResult"
 	"github.com/ElrondNetwork/elrond-go/storage"
 )
 
@@ -145,6 +147,18 @@ func (ic *ImmunityCache) Peek(key []byte) (value interface{}, ok bool) {
 
 // HasOrAdd adds an item in the cache
 func (ic *ImmunityCache) HasOrAdd(key []byte, value interface{}, sizeInBytes int) (has, added bool) {
+	log.Info("ImmunityCache.HasOrAdd()", "name", ic.config.Name, "key", key, "type", fmt.Sprintf("%T", value))
+	scr, isScr := value.(*smartContractResult.SmartContractResult)
+	if isScr {
+		data := string(scr.GetData())
+		ret := string(scr.GetReturnMessage())
+		log.Info("ImmunityCache.HasOrAdd(): SCR",
+			"from", scr.GetSndAddr(),
+			"to", scr.GetRcvAddr(),
+			"data", data,
+			"ret", ret)
+	}
+
 	cacheItem := newCacheItem(value, string(key), sizeInBytes)
 	chunk := ic.getChunkByKeyWithLock(string(key))
 	has, added = chunk.AddItem(cacheItem)

@@ -247,6 +247,7 @@ func (txPool *shardedTxPool) RemoveSetOfDataFromPool(keys [][]byte, cacheID stri
 func (txPool *shardedTxPool) removeTxBulk(txHashes [][]byte, cacheID string) {
 	numRemoved := 0
 	for _, key := range txHashes {
+		log.Info("shardedTxPool.removeTxBulk()", "key", key)
 		if txPool.removeTx(key, cacheID) {
 			numRemoved++
 		}

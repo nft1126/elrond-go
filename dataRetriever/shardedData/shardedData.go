@@ -88,7 +88,7 @@ func (sd *shardedData) shardStore(cacheID string) *shardStore {
 
 // AddData will add data to the corresponding shard store
 func (sd *shardedData) AddData(key []byte, value interface{}, sizeInBytes int, cacheID string) {
-	log.Trace("shardedData.AddData()", "name", sd.name, "cacheID", cacheID, "key", key, "size", sizeInBytes)
+	log.Info("shardedData.AddData()", "name", sd.name, "cacheID", cacheID, "key", key, "size", sizeInBytes, "type", fmt.Sprintf("%T", value))
 
 	store := sd.getOrCreateShardStoreWithLock(cacheID)
 
@@ -163,6 +163,7 @@ func (sd *shardedData) RemoveSetOfDataFromPool(keys [][]byte, cacheID string) {
 
 	numRemoved := 0
 	for _, key := range keys {
+		log.Info("shardedTxPool.removeTxBulk()", "key", key)
 		if store.cache.RemoveWithResult(key) {
 			numRemoved++
 		}
