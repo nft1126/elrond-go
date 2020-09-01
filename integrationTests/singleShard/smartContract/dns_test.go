@@ -3,10 +3,16 @@ package smartcontract
 import (
 	"bytes"
 	"encoding/hex"
+	"fmt"
 	"math/big"
 	"testing"
 
+	logger "github.com/ElrondNetwork/elrond-go-logger"
+	"github.com/ElrondNetwork/elrond-go/data/transaction"
+	"github.com/ElrondNetwork/elrond-go/integrationTests"
+	"github.com/ElrondNetwork/elrond-go/integrationTests/vm"
 	"github.com/ElrondNetwork/elrond-go/integrationTests/vm/arwen"
+	"github.com/ElrondNetwork/elrond-go/process/factory"
 	"github.com/stretchr/testify/require"
 )
 
@@ -47,4 +53,76 @@ func TestDNS_Register(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestDNS_IOTimeout(t *testing.T) {
+	logger.SetLogLevel("*:TRACE")
+	user, err := hex.DecodeString("e21ac250ef528573b860c439d8bc1711f3f378e1a5e51d07696e90742d282655")
+	require.Nil(t, err)
+
+	relayer, err := hex.DecodeString("edd147c39f9b16542e6f0a090aa9ce1269172d34bf60d110d00c8590911db067")
+	require.Nil(t, err)
+
+	var empty struct{}
+	dns, err := hex.DecodeString("000000000000000005008573c958c41e8d8f5a8382a133bd45a556c273b62655")
+	require.Nil(t, err)
+	integrationTests.ExtraDNSAddresses[string(dns)] = empty
+
+	network := integrationTests.NewOneNodeNetwork()
+
+	network.Mint(user, big.NewInt(1000000000000000000))
+	network.Mint(relayer, big.NewInt(1000000000000000000))
+
+	network.GoToRoundOne()
+
+	defer network.Stop()
+
+	scPath := "/var/work/Elrond/elrond-go/integrationTests/singleShard/smartContract/dns.wasm"
+	deployTxData := fmt.Sprintf("%s@%s@0100@0064", arwen.GetSCCode(scPath), hex.EncodeToString(factory.ArwenVirtualMachine))
+
+	network.AddTxToPool(&transaction.Transaction{
+		Nonce:    0,
+		Value:    big.NewInt(0),
+		RcvAddr:  vm.CreateEmptyAddress(),
+		SndAddr:  relayer,
+		GasPrice: network.GetMinGasPrice(),
+		GasLimit: network.MaxGasLimitPerBlock(),
+		Data:     []byte(deployTxData),
+	})
+
+	network.Continue(t, 1)
+
+	network.AddTxToPool(&transaction.Transaction{
+		Nonce:    1,
+		Value:    big.NewInt(0),
+		RcvAddr:  relayer,
+		SndAddr:  relayer,
+		GasPrice: network.GetMinGasPrice(),
+		GasLimit: 100000,
+		Data:     []byte("just bumping the nonce"),
+	})
+	network.AddTxToPool(&transaction.Transaction{
+		Nonce:    2,
+		Value:    big.NewInt(0),
+		RcvAddr:  relayer,
+		SndAddr:  relayer,
+		GasPrice: network.GetMinGasPrice(),
+		GasLimit: 100000,
+		Data:     []byte("just bumping the nonce"),
+	})
+
+	network.Continue(t, 1)
+
+	txData := "relayedTx@7b226e6f6e6365223a332c2276616c7565223a302c227265636569766572223a2241414141414141414141414641475548476e5749396b74536264455369584f4e6d3347616d7363664142553d222c2273656e646572223a223764464877352b62466c517562776f4a43716e4f456d6b584c54532f594e4551304179466b4a45647347633d222c226761735072696365223a313030303030303030302c226761734c696d6974223a32353030303030302c2264617461223a22636d566e61584e305a584a414e6a49324e545a6c4e6a6b324d545a6b4e6a6b325a54597a4e6d59334d7a5a6b4e6a453d222c22636861696e4944223a226447567a6447356c6443316c62484a76626d5174595778734c576c754c5739755a513d3d222c2276657273696f6e223a312c227369676e6174757265223a2274593277466b5874785064734271422f4a6e31375a515431393469384941493932325436424c53483035426a423638546357726d6d764f4e2b52764977303577734e47484b6435386c75677a4e5739343861674a44413d3d227d"
+	network.AddTxToPool(&transaction.Transaction{
+		Nonce:    0,
+		Value:    big.NewInt(0),
+		RcvAddr:  relayer,
+		SndAddr:  user,
+		GasPrice: 1000000000,
+		GasLimit: 25001808,
+		Data:     []byte(txData),
+	})
+
+	network.Continue(t, 1)
 }

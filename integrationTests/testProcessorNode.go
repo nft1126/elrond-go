@@ -127,7 +127,7 @@ var MinTxGasPrice = uint64(10)
 var MinTxGasLimit = uint64(1000)
 
 // MaxGasLimitPerBlock defines maximum gas limit allowed per one block
-const MaxGasLimitPerBlock = uint64(3000000)
+var MaxGasLimitPerBlock = uint64(30000000)
 
 const maxTxNonceDeltaAllowed = 8000
 const minConnectedPeers = 0
@@ -157,6 +157,9 @@ var testProtocolSustainabilityAddress = "erd1932eft30w753xyvme8d49qejgkjc09n5e49
 const sizeCheckDelta = 100
 
 const stateCheckpointModulus = 100
+
+// ExtraDNSAddresses --
+var ExtraDNSAddresses = make(map[string]struct{})
 
 // TestKeyPair holds a pair of private/public Keys
 type TestKeyPair struct {
@@ -997,6 +1000,10 @@ func (tpn *TestProcessorNode) initInnerProcessors() {
 	mapDNSAddresses := make(map[string]struct{})
 	if !check.IfNil(tpn.SmartContractParser) {
 		mapDNSAddresses, _ = tpn.SmartContractParser.GetDeployedSCAddresses(genesis.DNSType)
+	}
+
+	for addr, val := range ExtraDNSAddresses {
+		mapDNSAddresses[addr] = val
 	}
 
 	gasSchedule := arwenConfig.MakeGasMapForTests()
