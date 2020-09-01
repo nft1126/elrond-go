@@ -76,7 +76,7 @@ func TestDNS_IOTimeout(t *testing.T) {
 
 	network.GoToRoundOne()
 
-	scPath := "/var/work/Elrond/elrond-go/integrationTests/singleShard/smartContract/dns2.wasm"
+	scPath := "/var/work/Elrond/elrond-go/integrationTests/singleShard/smartContract/dns.wasm"
 	scCode, err := hex.DecodeString(arwen.GetSCCode(scPath))
 	require.Nil(t, err)
 
