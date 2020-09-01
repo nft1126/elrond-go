@@ -3,16 +3,14 @@ package smartcontract
 import (
 	"bytes"
 	"encoding/hex"
-	"fmt"
 	"math/big"
 	"testing"
 
 	logger "github.com/ElrondNetwork/elrond-go-logger"
+	"github.com/ElrondNetwork/elrond-go/data/state"
 	"github.com/ElrondNetwork/elrond-go/data/transaction"
 	"github.com/ElrondNetwork/elrond-go/integrationTests"
-	"github.com/ElrondNetwork/elrond-go/integrationTests/vm"
 	"github.com/ElrondNetwork/elrond-go/integrationTests/vm/arwen"
-	"github.com/ElrondNetwork/elrond-go/process/factory"
 	"github.com/stretchr/testify/require"
 )
 
@@ -57,6 +55,8 @@ func TestDNS_Register(t *testing.T) {
 
 func TestDNS_IOTimeout(t *testing.T) {
 	logger.SetLogLevel("*:TRACE")
+	integrationTests.MaxGasLimitPerBlock = uint64(30000000)
+
 	user, err := hex.DecodeString("e21ac250ef528573b860c439d8bc1711f3f378e1a5e51d07696e90742d282655")
 	require.Nil(t, err)
 
@@ -64,52 +64,33 @@ func TestDNS_IOTimeout(t *testing.T) {
 	require.Nil(t, err)
 
 	var empty struct{}
-	dns, err := hex.DecodeString("000000000000000005008573c958c41e8d8f5a8382a133bd45a556c273b62655")
+	dns, err := hex.DecodeString("0000000000000000050065071a7588f64b526dd11289738d9b719a9ac71f0015")
 	require.Nil(t, err)
 	integrationTests.ExtraDNSAddresses[string(dns)] = empty
 
 	network := integrationTests.NewOneNodeNetwork()
+	defer network.Stop()
 
 	network.Mint(user, big.NewInt(1000000000000000000))
 	network.Mint(relayer, big.NewInt(1000000000000000000))
 
 	network.GoToRoundOne()
 
-	defer network.Stop()
+	scPath := "/var/work/Elrond/elrond-go/integrationTests/singleShard/smartContract/dns2.wasm"
+	scCode, err := hex.DecodeString(arwen.GetSCCode(scPath))
+	require.Nil(t, err)
 
-	scPath := "/var/work/Elrond/elrond-go/integrationTests/singleShard/smartContract/dns.wasm"
-	deployTxData := fmt.Sprintf("%s@%s@0100@0064", arwen.GetSCCode(scPath), hex.EncodeToString(factory.ArwenVirtualMachine))
+	scDNSAccount, err := network.Node.AccntState.LoadAccount(dns)
+	require.Nil(t, err)
+	scDNS := scDNSAccount.(state.UserAccountHandler)
+	scDNS.SetCode(scCode)
+	scDNS.SetOwnerAddress(relayer)
+	network.Node.AccntState.SaveAccount(scDNS)
 
-	network.AddTxToPool(&transaction.Transaction{
-		Nonce:    0,
-		Value:    big.NewInt(0),
-		RcvAddr:  vm.CreateEmptyAddress(),
-		SndAddr:  relayer,
-		GasPrice: network.GetMinGasPrice(),
-		GasLimit: network.MaxGasLimitPerBlock(),
-		Data:     []byte(deployTxData),
-	})
-
-	network.Continue(t, 1)
-
-	network.AddTxToPool(&transaction.Transaction{
-		Nonce:    1,
-		Value:    big.NewInt(0),
-		RcvAddr:  relayer,
-		SndAddr:  relayer,
-		GasPrice: network.GetMinGasPrice(),
-		GasLimit: 100000,
-		Data:     []byte("just bumping the nonce"),
-	})
-	network.AddTxToPool(&transaction.Transaction{
-		Nonce:    2,
-		Value:    big.NewInt(0),
-		RcvAddr:  relayer,
-		SndAddr:  relayer,
-		GasPrice: network.GetMinGasPrice(),
-		GasLimit: 100000,
-		Data:     []byte("just bumping the nonce"),
-	})
+	relayerAccount, err := network.Node.AccntState.LoadAccount(relayer)
+	relayerUserAccount := relayerAccount.(state.UserAccountHandler)
+	relayerUserAccount.IncreaseNonce(3)
+	network.Node.AccntState.SaveAccount(relayerUserAccount)
 
 	network.Continue(t, 1)
 

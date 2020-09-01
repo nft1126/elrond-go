@@ -127,7 +127,7 @@ var MinTxGasPrice = uint64(10)
 var MinTxGasLimit = uint64(1000)
 
 // MaxGasLimitPerBlock defines maximum gas limit allowed per one block
-var MaxGasLimitPerBlock = uint64(30000000)
+var MaxGasLimitPerBlock = uint64(3000000)
 
 const maxTxNonceDeltaAllowed = 8000
 const minConnectedPeers = 0
