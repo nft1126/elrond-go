@@ -144,8 +144,9 @@ func getSyncValidatorStatusArgs() ArgsNewSyncValidatorStatus {
 				return 2
 			},
 		},
-		NodeShuffler:      &mock.NodeShufflerMock{},
-		PubKey:            []byte("public key"),
-		ShardIdAsObserver: 0,
+		NodeShuffler:                   &mock.NodeShufflerMock{},
+		PubKey:                         []byte("public key"),
+		ShardIdAsObserver:              0,
+		NbStoredEpochsNodesCoordinator: uint32(3),
 	}
 }

@@ -51,6 +51,7 @@ import (
 const blsConsensusType = "bls"
 const signatureSize = 48
 const publicKeySize = 96
+const nbStoredEpochsNodesCoordinator = uint32(3)
 
 var p2pBootstrapDelay = time.Second * 5
 var testPubkeyConverter, _ = pubkeyConverter.NewHexPubkeyConverter(32)
@@ -476,6 +477,7 @@ func createNodes(
 			SelfPublicKey:           []byte(strconv.Itoa(i)),
 			ConsensusGroupCache:     consensusCache,
 			ShuffledOutHandler:      &mock.ShuffledOutHandlerStub{},
+			NbStoredEpochs:          nbStoredEpochsNodesCoordinator,
 		}
 		nodesCoordinator, _ := sharding.NewIndexHashedNodesCoordinator(argumentsNodesCoordinator)
 

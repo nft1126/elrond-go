@@ -1098,6 +1098,7 @@ func startNode(ctx *cli.Context, log logger.Logger, version string) error {
 		chanStopNodeProcess,
 		bootstrapParameters,
 		currentEpoch,
+		generalConfig.StoragePruning.NumActivePersisters,
 	)
 	if err != nil {
 		return err
@@ -1813,6 +1814,7 @@ func createNodesCoordinator(
 	chanStopNodeProcess chan endProcess.ArgEndProcess,
 	bootstrapParameters bootstrap.Parameters,
 	startEpoch uint32,
+	numActivePersisters uint64,
 ) (sharding.NodesCoordinator, update.Closer, error) {
 	shardIDAsObserver, err := processDestinationShardAsObserver(prefsConfig)
 	if err != nil {
@@ -1915,6 +1917,7 @@ func createNodesCoordinator(
 		ShuffledOutHandler:      shuffledOutHandler,
 		Epoch:                   currentEpoch,
 		StartEpoch:              startEpoch,
+		NbStoredEpochs:          uint32(numActivePersisters),
 	}
 
 	baseNodesCoordinator, err := sharding.NewIndexHashedNodesCoordinator(argumentsNodesCoordinator)

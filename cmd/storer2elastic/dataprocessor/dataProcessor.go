@@ -248,6 +248,7 @@ func (dp *dataProcessor) createNodesCoordinatorForShard(nodesConfig update.Genes
 
 	memDB := disabled.CreateMemUnit()
 
+	nbStoredEpochs := uint32(3)
 	argsNodesCoordinator := sharding.ArgNodesCoordinator{
 		ShardConsensusGroupSize: int(nodesConfig.GetShardConsensusGroupSize()),
 		MetaConsensusGroupSize:  int(nodesConfig.GetMetaConsensusGroupSize()),
@@ -263,6 +264,7 @@ func (dp *dataProcessor) createNodesCoordinatorForShard(nodesConfig update.Genes
 		SelfPublicKey:           []byte("own public key"),
 		ConsensusGroupCache:     consensusGroupCache,
 		ShuffledOutHandler:      disabled.NewShuffledOutHandler(),
+		NbStoredEpochs:          nbStoredEpochs,
 	}
 	baseNodesCoordinator, err := sharding.NewIndexHashedNodesCoordinator(argsNodesCoordinator)
 	if err != nil {

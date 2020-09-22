@@ -33,15 +33,16 @@ type syncValidatorStatus struct {
 
 // ArgsNewSyncValidatorStatus holds the arguments needed for creating a new validator status process component
 type ArgsNewSyncValidatorStatus struct {
-	DataPool           dataRetriever.PoolsHolder
-	Marshalizer        marshal.Marshalizer
-	Hasher             hashing.Hasher
-	RequestHandler     process.RequestHandler
-	ChanceComputer     sharding.ChanceComputer
-	GenesisNodesConfig sharding.GenesisNodesSetupHandler
-	NodeShuffler       sharding.NodesShuffler
-	PubKey             []byte
-	ShardIdAsObserver  uint32
+	DataPool                       dataRetriever.PoolsHolder
+	Marshalizer                    marshal.Marshalizer
+	Hasher                         hashing.Hasher
+	RequestHandler                 process.RequestHandler
+	ChanceComputer                 sharding.ChanceComputer
+	GenesisNodesConfig             sharding.GenesisNodesSetupHandler
+	NodeShuffler                   sharding.NodesShuffler
+	PubKey                         []byte
+	ShardIdAsObserver              uint32
+	NbStoredEpochsNodesCoordinator uint32
 }
 
 // NewSyncValidatorStatus creates a new validator status process component
@@ -98,6 +99,7 @@ func NewSyncValidatorStatus(args ArgsNewSyncValidatorStatus) (*syncValidatorStat
 		SelfPublicKey:           args.PubKey,
 		ConsensusGroupCache:     consensusGroupCache,
 		ShuffledOutHandler:      disabled.NewShuffledOutHandler(),
+		NbStoredEpochs:          args.NbStoredEpochsNodesCoordinator,
 	}
 	baseNodesCoordinator, err := sharding.NewIndexHashedNodesCoordinator(argsNodesCoordinator)
 	if err != nil {

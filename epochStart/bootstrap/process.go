@@ -656,16 +656,18 @@ func (e *epochStartBootstrap) processNodesConfig(pubKey []byte) error {
 	if shardId > e.baseData.numberOfShards && shardId != core.MetachainShardId {
 		shardId = e.genesisShardCoordinator.SelfId()
 	}
+	nbStoredEpochs := uint32(e.generalConfig.StoragePruning.NumActivePersisters)
 	argsNewValidatorStatusSyncers := ArgsNewSyncValidatorStatus{
-		DataPool:           e.dataPool,
-		Marshalizer:        e.marshalizer,
-		RequestHandler:     e.requestHandler,
-		ChanceComputer:     e.rater,
-		GenesisNodesConfig: e.genesisNodesConfig,
-		NodeShuffler:       e.nodeShuffler,
-		Hasher:             e.hasher,
-		PubKey:             pubKey,
-		ShardIdAsObserver:  shardId,
+		DataPool:                       e.dataPool,
+		Marshalizer:                    e.marshalizer,
+		RequestHandler:                 e.requestHandler,
+		ChanceComputer:                 e.rater,
+		GenesisNodesConfig:             e.genesisNodesConfig,
+		NodeShuffler:                   e.nodeShuffler,
+		Hasher:                         e.hasher,
+		PubKey:                         pubKey,
+		ShardIdAsObserver:              shardId,
+		NbStoredEpochsNodesCoordinator: nbStoredEpochs,
 	}
 	e.nodesConfigHandler, err = NewSyncValidatorStatus(argsNewValidatorStatusSyncers)
 	if err != nil {

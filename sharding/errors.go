@@ -64,6 +64,10 @@ var ErrSmallMetachainEligibleListSize = errors.New("small metachain eligible lis
 // ErrMapSizeZero signals that there are no elements in the map
 var ErrMapSizeZero = errors.New("map size zero")
 
+// ErrNodesCoordinatorStoredEpochsSmallerThan3 signals that the number of epochs to store
+// in the nodes coordinator is smaller than 3
+var ErrNodesCoordinatorStoredEpochsSmallerThan3 = errors.New("nodes coordinator stored epochs smaller than 3")
+
 // ErrEpochNodesConfigDoesNotExist signals that the epoch nodes configuration is missing
 var ErrEpochNodesConfigDoesNotExist = errors.New("epoch nodes configuration does not exist")
 

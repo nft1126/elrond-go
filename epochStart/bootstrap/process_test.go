@@ -114,6 +114,9 @@ func createMockEpochStartBootstrapArgs() ArgsEpochStartBootstrap {
 				SnapshotsBufferLen: 10,
 				MaxSnapshots:       2,
 			},
+			StoragePruning: config.StoragePruningConfig{
+				NumActivePersisters: 3,
+			},
 		},
 		EconomicsData:              &economics.EconomicsData{},
 		SingleSigner:               &mock.SignerStub{},
@@ -491,6 +494,7 @@ func getNodesConfigMock(numOfShards uint32) sharding.GenesisNodesSetupHandler {
 func TestRequestAndProcessing(t *testing.T) {
 	args := createMockEpochStartBootstrapArgs()
 	args.GeneralConfig.StoragePruning.CleanOldEpochsData = true
+	args.GeneralConfig.StoragePruning.NumActivePersisters = 3
 	args.PublicKey = &mock.PublicKeyMock{}
 	args.GenesisNodesConfig = getNodesConfigMock(1)
 

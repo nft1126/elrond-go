@@ -26,9 +26,6 @@ const (
 	defaultSelectionChances = uint32(1)
 )
 
-// TODO: move this to config parameters
-const nodeCoordinatorStoredEpochs = 3
-
 type validatorWithShardID struct {
 	validator Validator
 	shardID   uint32
@@ -85,6 +82,7 @@ type indexHashedNodesCoordinator struct {
 	shuffledOutHandler            ShuffledOutHandler
 	startEpoch                    uint32
 	publicKeyToValidatorMap       map[string]*validatorWithShardID
+	nbStoredEpochs                uint32
 }
 
 // NewIndexHashedNodesCoordinator creates a new index hashed group selector
@@ -94,7 +92,7 @@ func NewIndexHashedNodesCoordinator(arguments ArgNodesCoordinator) (*indexHashed
 		return nil, err
 	}
 
-	nodesConfig := make(map[uint32]*epochNodesConfig, nodeCoordinatorStoredEpochs)
+	nodesConfig := make(map[uint32]*epochNodesConfig, arguments.NbStoredEpochs)
 
 	nodesConfig[arguments.Epoch] = &epochNodesConfig{
 		nbShards:    arguments.NbShards,
@@ -125,6 +123,7 @@ func NewIndexHashedNodesCoordinator(arguments ArgNodesCoordinator) (*indexHashed
 		shuffledOutHandler:            arguments.ShuffledOutHandler,
 		startEpoch:                    arguments.StartEpoch,
 		publicKeyToValidatorMap:       make(map[string]*validatorWithShardID),
+		nbStoredEpochs:                arguments.NbStoredEpochs,
 	}
 
 	ihgs.loadingFromDisk.Store(false)
@@ -194,6 +193,9 @@ func checkArguments(arguments ArgNodesCoordinator) error {
 	}
 	if check.IfNil(arguments.ShuffledOutHandler) {
 		return ErrNilShuffledOutHandler
+	}
+	if arguments.NbStoredEpochs < 3 {
+		return ErrNodesCoordinatorStoredEpochsSmallerThan3
 	}
 
 	return nil
@@ -705,7 +707,7 @@ func (ihgs *indexHashedNodesCoordinator) computeNodesConfigFromList(
 // NodeCoordinator has to get the nodes assignment to shards using the shuffler.
 func (ihgs *indexHashedNodesCoordinator) EpochStartAction(hdr data.HeaderHandler) {
 	newEpoch := hdr.GetEpoch()
-	epochToRemove := int32(newEpoch) - nodeCoordinatorStoredEpochs
+	epochToRemove := newEpoch - ihgs.nbStoredEpochs
 	needToRemove := epochToRemove >= 0
 	ihgs.currentEpoch = newEpoch
 

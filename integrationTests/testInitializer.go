@@ -81,10 +81,11 @@ var log = logger.GetOrCreate("integrationtests")
 
 // shuffler constants
 const (
-	shuffleBetweenShards = false
-	adaptivity           = false
-	hysteresis           = float32(0.2)
-	maxTrieLevelInMemory = uint(5)
+	shuffleBetweenShards           = false
+	adaptivity                     = false
+	hysteresis                     = float32(0.2)
+	maxTrieLevelInMemory           = uint(5)
+	nbStoredEpochsNodesCoordinator = uint32(3)
 )
 
 // Type defines account types to save in accounts trie

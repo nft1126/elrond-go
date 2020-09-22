@@ -86,6 +86,7 @@ func CreateProcessorNodesWithNodesCoordinator(
 				SelfPublicKey:           v.PubKeyBytes(),
 				ConsensusGroupCache:     cache,
 				ShuffledOutHandler:      &mock.ShuffledOutHandlerStub{},
+				NbStoredEpochs:          nbStoredEpochsNodesCoordinator,
 			}
 
 			nodesCoordinator, err := sharding.NewIndexHashedNodesCoordinator(argumentsNodesCoordinator)

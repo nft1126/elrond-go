@@ -58,6 +58,7 @@ func (tpn *IndexHashedNodesCoordinatorFactory) CreateNodesCoordinator(arg ArgInd
 		ConsensusGroupCache:     arg.consensusGroupCache,
 		BootStorer:              arg.bootStorer,
 		ShuffledOutHandler:      &mock.ShuffledOutHandlerStub{},
+		NbStoredEpochs:          nbStoredEpochsNodesCoordinator,
 	}
 	nodesCoordinator, err := sharding.NewIndexHashedNodesCoordinator(argumentsNodesCoordinator)
 	if err != nil {
@@ -102,6 +103,7 @@ func (ihncrf *IndexHashedNodesCoordinatorWithRaterFactory) CreateNodesCoordinato
 		ConsensusGroupCache:     arg.consensusGroupCache,
 		BootStorer:              arg.bootStorer,
 		ShuffledOutHandler:      &mock.ShuffledOutHandlerStub{},
+		NbStoredEpochs:          nbStoredEpochsNodesCoordinator,
 	}
 
 	baseCoordinator, err := sharding.NewIndexHashedNodesCoordinator(argumentsNodesCoordinator)
