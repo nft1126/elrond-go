@@ -54,6 +54,8 @@ func (bap *baseAPIBockProcessor) getTxsByMb(mbHeader *block.MiniBlockHeader, epo
 		return bap.getTxsFromMiniblock(miniBlock, miniblockHash, epoch, transaction.TxTypeUnsigned, dataRetriever.UnsignedTransactionUnit)
 	case block.InvalidBlock:
 		return bap.getTxsFromMiniblock(miniBlock, miniblockHash, epoch, transaction.TxTypeInvalid, dataRetriever.TransactionUnit)
+	case block.ReceiptBlock:
+		return bap.getTxsFromMiniblock(miniBlock, miniblockHash, epoch, transaction.TxTypeUnsigned, dataRetriever.ReceiptsUnit)
 	default:
 		return nil
 	}

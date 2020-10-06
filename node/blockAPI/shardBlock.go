@@ -68,6 +68,8 @@ func (sbp *shardAPIBlockProcessor) convertShardBlockBytesToAPIBlock(hash []byte,
 	numOfTxs := uint32(0)
 	miniblocks := make([]*apiBlock.APIMiniBlock, 0)
 	for _, mb := range blockHeader.MiniBlockHeaders {
+		log.Info("convertShardBlockBytesToAPIBlock", "type", mb.Type.String())
+
 		if mb.Type == block.PeerBlock {
 			continue
 		}

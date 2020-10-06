@@ -106,6 +106,7 @@ func putMiniblockFieldsInTransaction(tx *transaction.ApiTransactionResult, minib
 	tx.DestinationShard = miniblockMetadata.DestinationShardID
 	tx.SourceShard = miniblockMetadata.SourceShardID
 
+	// For cross-shard transactions, this is the nonce & hash of the destination block
 	tx.BlockNonce = miniblockMetadata.HeaderNonce
 	tx.BlockHash = hex.EncodeToString(miniblockMetadata.HeaderHash)
 	tx.NotarizedAtSourceInMetaNonce = miniblockMetadata.NotarizedAtSourceInMetaNonce
