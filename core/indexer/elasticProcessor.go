@@ -354,21 +354,36 @@ func (ei *elasticProcessor) SaveTransactions(
 		return nil
 	}
 
+	sw := core.NewStopWatch()
+	sw.Start("elastic_SaveTransactions")
+	defer func() {
+		sw.Stop("elastic_SaveTransactions")
+		log.Debug("elasticProcessor SaveTransactions measurements", sw.GetMeasurements()...)
+	}()
+
+	sw.Start("elastic_prepareTransactionsForDatabase")
 	txs, alteredAccounts := ei.prepareTransactionsForDatabase(body, header, txPool, selfShardID)
+	sw.Stop("elastic_prepareTransactionsForDatabase")
+
+	sw.Start("elastic_serializeTransactions")
 	buffSlice, err := serializeTransactions(txs, selfShardID, ei.getExistingObjMap, mbsInDb)
+	sw.Stop("elastic_serializeTransactions")
+
 	if err != nil {
 		return err
 	}
 
+	sw.Start("elastic_SaveTransactions_DoBulkRequest")
 	for idx := range buffSlice {
 		err = ei.elasticClient.DoBulkRequest(&buffSlice[idx], txIndex)
 		if err != nil {
 			log.Warn("indexer indexing bulk of transactions",
 				"error", err.Error())
+			sw.Stop("elastic_SaveTransactions_DoBulkRequest")
 			return err
 		}
 	}
-
+	sw.Stop("elastic_SaveTransactions_DoBulkRequest")
 	return ei.indexAlteredAccounts(alteredAccounts)
 }
 

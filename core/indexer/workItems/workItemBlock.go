@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	logger "github.com/ElrondNetwork/elrond-go-logger"
+	"github.com/ElrondNetwork/elrond-go/core"
 	"github.com/ElrondNetwork/elrond-go/core/check"
 	"github.com/ElrondNetwork/elrond-go/data"
 	"github.com/ElrondNetwork/elrond-go/data/block"
@@ -55,6 +56,13 @@ func (wib *itemBlock) Save() error {
 
 	log.Debug("indexer: starting indexing block", "hash", wib.headerHash, "nonce", wib.headerHandler.GetNonce())
 
+	sw := core.NewStopWatch()
+	sw.Start("elastic_itemBlock_Save")
+	defer func() {
+		sw.Stop("elastic_itemBlock_Save")
+		log.Debug("elastic itemBlock measurements", sw.GetMeasurements()...)
+	}()
+
 	body, ok := wib.bodyHandler.(*block.Body)
 	if !ok {
 		return fmt.Errorf("%w when trying body assertion, block hash %s, nonce %d",
@@ -62,28 +70,38 @@ func (wib *itemBlock) Save() error {
 	}
 
 	txsSizeInBytes := ComputeSizeOfTxs(wib.marshalizer, wib.txPool)
+	sw.Start("elastic_itemBlock_SaveHeader")
 	err := wib.indexer.SaveHeader(wib.headerHandler, wib.signersIndexes, body, wib.notarizedHeadersHashes, txsSizeInBytes)
 	if err != nil {
+		sw.Stop("elastic_itemBlock_SaveHeader")
 		return fmt.Errorf("%w when saving header block, hash %s, nonce %d",
 			err, logger.DisplayByteSlice(wib.headerHash), wib.headerHandler.GetNonce())
 	}
+	sw.Stop("elastic_itemBlock_SaveHeader")
 
 	if len(body.MiniBlocks) == 0 {
 		return nil
 	}
 
+	sw.Start("elastic_itemBlock_SaveMiniblocks")
 	mbsInDb, err := wib.indexer.SaveMiniblocks(wib.headerHandler, body)
 	if err != nil {
+		sw.Stop("elastic_itemBlock_SaveMiniblocks")
 		return fmt.Errorf("%w when saving miniblocks, block hash %s, nonce %d",
 			err, logger.DisplayByteSlice(wib.headerHash), wib.headerHandler.GetNonce())
 	}
+	sw.Stop("elastic_itemBlock_SaveMiniblocks")
 
 	shardID := wib.headerHandler.GetShardID()
+	sw.Start("elastic_itemBlock_SaveTransactions")
 	err = wib.indexer.SaveTransactions(body, wib.headerHandler, wib.txPool, shardID, mbsInDb)
 	if err != nil {
+		sw.Stop("elastic_itemBlock_SaveTransactions")
 		return fmt.Errorf("%w when saving transactions, block hash %s, nonce %d",
 			err, logger.DisplayByteSlice(wib.headerHash), wib.headerHandler.GetNonce())
 	}
+
+	sw.Stop("elastic_itemBlock_SaveTransactions")
 
 	return nil
 }
