@@ -866,14 +866,29 @@ func (sp *shardProcessor) CommitBlock(
 	}
 
 	sp.blockChain.SetCurrentBlockHeaderHash(headerHash)
-	sp.indexBlockIfNeeded(bodyHandler, headerHash, headerHandler, lastBlockHeader)
-	sp.recordBlockInHistory(headerHash, headerHandler, bodyHandler)
+	sw := core.NewStopWatch()
+	sw.Start("bad zone")
+	defer func() {
+		sw.Stop("bad zone")
+		log.Debug("shardProcessor.CommitBlock", sw.GetMeasurements()...)
+	}()
 
+	sw.Start("indexBlockIfNeeded")
+	sp.indexBlockIfNeeded(bodyHandler, headerHash, headerHandler, lastBlockHeader)
+	sw.Stop("indexBlockIfNeeded")
+
+	sw.Start("CommitBlock.recordBlockInHistory")
+	sp.recordBlockInHistory(headerHash, headerHandler, bodyHandler)
+	sw.Stop("CommitBlock.recordBlockInHistory")
+
+	sw.Start("GetLastCrossNotarizedHeader")
 	lastCrossNotarizedHeader, _, err := sp.blockTracker.GetLastCrossNotarizedHeader(core.MetachainShardId)
+	sw.Stop("GetLastCrossNotarizedHeader")
 	if err != nil {
 		return err
 	}
 
+	sw.Start("saveMetricsForCommittedShardBlock")
 	saveMetricsForCommittedShardBlock(
 		sp.nodesCoordinator,
 		sp.appStatusHandler,
@@ -882,17 +897,26 @@ func (sp *shardProcessor) CommitBlock(
 		lastCrossNotarizedHeader,
 		header,
 	)
+	sw.Stop("saveMetricsForCommittedShardBlock")
 
+	sw.Start("headerInfo")
 	headerInfo := bootstrapStorage.BootstrapHeaderInfo{
 		ShardId: header.GetShardID(),
 		Epoch:   header.GetEpoch(),
 		Nonce:   header.GetNonce(),
 		Hash:    headerHash,
 	}
+	sw.Stop("headerInfo")
 
+	sw.Start("sp.nodesCoordinator.GetSavedStateKey()")
 	nodesCoordinatorKey := sp.nodesCoordinator.GetSavedStateKey()
-	epochStartKey := sp.epochStartTrigger.GetSavedStateKey()
+	sw.Stop("sp.nodesCoordinator.GetSavedStateKey()")
 
+	sw.Start("sp.epochStartTrigger.GetSavedStateKey()")
+	epochStartKey := sp.epochStartTrigger.GetSavedStateKey()
+	sw.Stop("sp.epochStartTrigger.GetSavedStateKey()")
+
+	sw.Start("bootStorerDataArgs")
 	args := bootStorerDataArgs{
 		headerInfo:                 headerInfo,
 		round:                      header.Round,
@@ -902,8 +926,11 @@ func (sp *shardProcessor) CommitBlock(
 		nodesCoordinatorConfigKey:  nodesCoordinatorKey,
 		epochStartTriggerConfigKey: epochStartKey,
 	}
+	sw.Stop("bootStorerDataArgs")
 
+	sw.Start("prepareDataForBootStorer")
 	sp.prepareDataForBootStorer(args)
+	sw.Stop("prepareDataForBootStorer")
 
 	// write data to log
 	go sp.txCounter.displayLogInfo(
@@ -917,9 +944,13 @@ func (sp *shardProcessor) CommitBlock(
 		sp.blockTracker,
 	)
 
+	sw.Start("blockSizeThrottler.Succeed")
 	sp.blockSizeThrottler.Succeed(header.Round)
+	sw.Stop("blockSizeThrottler.Succeed")
 
+	sw.Start("displayPoolsInfo")
 	sp.displayPoolsInfo()
+	sw.Stop("displayPoolsInfo")
 
 	errNotCritical = sp.removeTxsFromPools(bodyHandler)
 	if errNotCritical != nil {
