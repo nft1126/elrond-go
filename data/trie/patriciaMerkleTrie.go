@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"sync"
+	"time"
 
 	"github.com/ElrondNetwork/elrond-go-logger"
 	"github.com/ElrondNetwork/elrond-go/core"
@@ -609,6 +610,8 @@ func (tr *patriciaMerkleTrie) GetAllLeavesOnChannel(rootHash []byte) (chan core.
 	tr.mutOperation.RUnlock()
 
 	go func() {
+		startTime := time.Now()
+
 		tr.mutOperation.RLock()
 		err = newTrie.root.getAllLeavesOnChannel(leavesChannel, []byte{}, tr.Database(), tr.marshalizer)
 		if err != nil {
@@ -616,6 +619,11 @@ func (tr *patriciaMerkleTrie) GetAllLeavesOnChannel(rootHash []byte) (chan core.
 		}
 		tr.ExitPruningBufferingMode()
 		tr.mutOperation.RUnlock()
+
+		elapsedTime := time.Since(startTime)
+		log.Debug("elapsed time to getAllLeaves",
+			"time", elapsedTime,
+		)
 
 		close(leavesChannel)
 	}()

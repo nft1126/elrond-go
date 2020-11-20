@@ -483,8 +483,19 @@ func (adb *AccountsDB) removeCode(baseAcc baseAccountHandler) error {
 
 // LoadAccount fetches the account based on the address. Creates an empty account if the account is missing.
 func (adb *AccountsDB) LoadAccount(address []byte) (AccountHandler, error) {
+	startTime := time.Now()
+
 	adb.mutOp.Lock()
-	defer adb.mutOp.Unlock()
+
+	defer func() {
+		adb.mutOp.Unlock()
+		elapsedTime := time.Since(startTime)
+		if elapsedTime >= time.Millisecond*100 {
+			log.Debug("elapsed time to loadAccount",
+				"time", elapsedTime,
+			)
+		}
+	}()
 
 	if len(address) == 0 {
 		return nil, fmt.Errorf("%w in LoadAccount", ErrNilAddress)
@@ -655,8 +666,17 @@ func (adb *AccountsDB) JournalLen() int {
 
 // Commit will persist all data inside the trie
 func (adb *AccountsDB) Commit() ([]byte, error) {
+	startTime := time.Now()
+
 	adb.mutOp.Lock()
-	defer adb.mutOp.Unlock()
+	defer func() {
+		adb.mutOp.Unlock()
+		elapsedTime := time.Since(startTime)
+		log.Debug("elapsed time to commit state",
+			"time", elapsedTime,
+		)
+
+	}()
 
 	log.Trace("accountsDB.Commit started")
 	adb.entries = make([]JournalEntry, 0)
@@ -856,7 +876,9 @@ func (adb *AccountsDB) snapshotUserAccountDataTrie(rootHash []byte) {
 		return
 	}
 
+	numLeaves := 0
 	for leaf := range leavesChannel {
+		numLeaves++
 		account := &userAccount{}
 		err = adb.marshalizer.Unmarshal(account, leaf.Value())
 		if err != nil {
@@ -868,6 +890,8 @@ func (adb *AccountsDB) snapshotUserAccountDataTrie(rootHash []byte) {
 			adb.mainTrie.SetCheckpoint(account.RootHash)
 		}
 	}
+
+	log.Debug("getAllLeaves", "num", numLeaves)
 }
 
 // SetStateCheckpoint sets a checkpoint for the state trie
