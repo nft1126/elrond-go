@@ -1,6 +1,7 @@
 package genesis
 
 import (
+	"context"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -268,7 +269,8 @@ func (se *stateExport) exportTrie(key string, trie data.Trie) error {
 		return err
 	}
 
-	leavesChannel, err := trie.GetAllLeavesOnChannel(rootHash)
+	ctx := context.Background()
+	leavesChannel, err := trie.GetAllLeavesOnChannel(rootHash, ctx)
 	if err != nil {
 		return err
 	}
@@ -322,7 +324,6 @@ func (se *stateExport) exportDataTries(
 ) error {
 	for leaf := range leavesChannel {
 		keyToExport := CreateAccountKey(accType, shId, leaf.Key())
-
 		err := se.hardforkStorer.Write(identifier, []byte(keyToExport), leaf.Value())
 		if err != nil {
 			return err
@@ -345,7 +346,6 @@ func (se *stateExport) exportAccountLeaves(
 ) error {
 	for leaf := range leavesChannel {
 		keyToExport := CreateAccountKey(accType, shId, leaf.Key())
-
 		err := se.hardforkStorer.Write(identifier, []byte(keyToExport), leaf.Value())
 		if err != nil {
 			return err
