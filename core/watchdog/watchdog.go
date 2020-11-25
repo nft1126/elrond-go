@@ -57,11 +57,11 @@ func (w *watchdog) defaultWatchdogExpiry(watchdogID string) {
 	log.Error("watchdog alarm has expired", "alarm", watchdogID)
 	log.Warn(buffer.String())
 
-	//arg := endProcess.ArgEndProcess{
-	//	Reason:      "alarm " + watchdogID + " has expired",
-	//	Description: "the " + watchdogID + " is stuck",
-	//}
-	//w.chanStopNodeProcess <- arg
+	arg := endProcess.ArgEndProcess{
+		Reason:      "alarm " + watchdogID + " has expired",
+		Description: "the " + watchdogID + " is stuck",
+	}
+	w.chanStopNodeProcess <- arg
 }
 
 // Stop stops the alarm with the specified ID
